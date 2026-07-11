@@ -10,14 +10,14 @@
   "chapterSortMode": "daily-append",
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-11T12:00:15.970Z",
+  "updatedAt": "2026-07-11T20:11:31.695Z",
   "chapters": [
     {
       "id": "01-textbook",
       "title": "Textbook",
       "order": 1,
       "pdfUrl": "/chapters/01-textbook.pdf",
-      "uploadedAt": "2026-07-11T10:50:19.661Z",
+      "uploadedAt": "2026-07-11T18:36:37.098Z",
       "filename": "01-textbook.pdf"
     }
   ]
