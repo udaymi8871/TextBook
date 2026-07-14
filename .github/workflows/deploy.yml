@@ -1,9 +1,12 @@
-name: Deploy Vite App to GitHub Pages
+name: Deploy Books to GitHub Pages
 
+# Deploy only from main (GitHub Pages environment blocks book/* branches).
+# Builds every book/* branch into its own live path under /TextBook/<slug>/.
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,8 +22,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout all branches
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,10 +36,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        env:
-          VITE_BASE: /TextBook/
-        run: npm run build
+      - name: Build every book branch into its own URL path
+        run: |
+          set -euo pipefail
+          SITE_DIR="$PWD/site"
+          mkdir -p "$SITE_DIR"
+
+          # Root: https://udaymi8871.github.io/TextBook/
+          export VITE_BASE=/TextBook/
+          npm run build
+          cp -R dist/. "$SITE_DIR/"
+          cp "$SITE_DIR/index.html" "$SITE_DIR/404.html"
+
+          # Per-book URLs, e.g.
+          # https://udaymi8871.github.io/TextBook/01-demo-1/
+          # https://udaymi8871.github.io/TextBook/03-demo-3/
+          for branch in $(git branch -r | sed 's|^[[:space:]]*origin/||' | grep '^book/' | sort -u); do
+            slug="${branch#book/}"
+            echo "::group::Building $branch → /TextBook/${slug}/"
+            git checkout -f "origin/$branch"
+            npm ci
+            export VITE_BASE="/TextBook/${slug}/"
+            npm run build
+            mkdir -p "$SITE_DIR/$slug"
+            cp -R dist/. "$SITE_DIR/$slug/"
+            cp "$SITE_DIR/$slug/index.html" "$SITE_DIR/$slug/404.html"
+            echo "::endgroup::"
+          done
+
+          git checkout -f main
+          find "$SITE_DIR" -maxdepth 2 -type d
+          find "$SITE_DIR" -maxdepth 2 -type f -name index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -42,21 +74,14 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./site
 
   deploy:
     needs: build
-
-    permissions:
-      pages: write
-      id-token: write
-
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-
     steps:
       - name: Deploy
         id: deployment
