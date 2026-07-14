@@ -60,6 +60,14 @@ function resolvePdfPath(pdfArg) {
   throw new Error(`PDF not found: ${pdfArg}`);
 }
 
+function humanizePdfTitle(pdfPath) {
+  const base = path.basename(pdfPath, path.extname(pdfPath));
+  return base
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function dayFromSlug(slug) {
   const match = slug.match(/^(\d+)/);
   return match ? match[1].padStart(2, '0') : '01';
@@ -68,6 +76,7 @@ function dayFromSlug(slug) {
 function setupBook({ slug, title, pdfPath }) {
   const day = dayFromSlug(slug);
   const chapterFilename = `${slug}.pdf`;
+  const bookTitle = title || humanizePdfTitle(pdfPath);
 
   clearChapterPdfs();
   fs.copyFileSync(pdfPath, path.join(paths.CHAPTERS_DIR, chapterFilename));
@@ -75,13 +84,13 @@ function setupBook({ slug, title, pdfPath }) {
   const config = {
     id: `stringstack-${slug}`,
     slug,
-    title,
+    title: bookTitle,
     subtitle: `Day ${day} · StringStack.ai`,
     author: 'StringStack Content Team',
     publisher: 'StringStack.ai',
     coverColor: '#252525',
     accentColor: '#C6A43B',
-    autoTitleFromFirstPdf: false,
+    autoTitleFromFirstPdf: true,
     chapterSortMode: 'numbered',
     singleBookMode: true,
   };
@@ -95,7 +104,7 @@ function setupBook({ slug, title, pdfPath }) {
   const entry = {
     slug,
     branch,
-    title,
+    title: bookTitle,
     pdf: chapterFilename,
     sessionLabel: `Day-${day} Session`,
     githubUrl: `https://github.com/udaymi8871/TextBook/tree/${branch}`,
@@ -110,17 +119,20 @@ function setupBook({ slug, title, pdfPath }) {
   registry.books.sort((a, b) => a.slug.localeCompare(b.slug));
   writeRegistry(registry);
 
-  return { manifest, branch, entry };
+  return { manifest, branch, entry, bookTitle };
 }
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.slug || !args.title || !args.pdf) {
-    console.error('Usage: node scripts/create-book-branch.mjs --slug 01-demo-1 --title "Demo 1" --pdf Demo-1.pdf [--push]');
+  if (!args.slug || !args.pdf) {
+    console.error(
+      'Usage: node scripts/create-book-branch.mjs --slug 04-demo-4 --pdf "Java Introduction -1.pdf" [--title "Optional Override"] [--push]',
+    );
     process.exit(1);
   }
 
   const pdfPath = resolvePdfPath(args.pdf);
+  const title = args.title || humanizePdfTitle(pdfPath);
   const branch = `book/${args.slug}`;
 
   run('git checkout main');
@@ -130,15 +142,15 @@ function main() {
     run(`git checkout ${branch}`);
   }
 
-  const { manifest, entry } = setupBook({
+  const { manifest, entry, bookTitle } = setupBook({
     slug: args.slug,
-    title: args.title,
+    title,
     pdfPath,
   });
 
   if (!args.noCommit) {
     run('git add content/book.config.json public/chapters public/api/book-manifest.json books/registry.json');
-    run(`git commit -m "Add book branch ${args.slug}: ${args.title}"`);
+    run(`git commit -m "Add book branch ${args.slug}: ${bookTitle}"`);
   }
 
   console.log('');
@@ -150,10 +162,10 @@ function main() {
   console.log('');
 
   if (args.push) {
-    run(`git push -u origin ${branch}`);
+    run(`git push -u origin ${branch} --force-with-lease`);
     console.log(`Pushed ${branch} to origin`);
   } else {
-    console.log(`Push with: git push -u origin ${branch}`);
+    console.log(`Push with: git push -u origin ${branch} --force-with-lease`);
   }
 }
 

@@ -16,20 +16,23 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
   if (page.kind === 'session-start') {
     return (
       <div
-        className={clsx('flex h-full w-full flex-col items-center justify-center p-8 text-center', colors.paper)}
+        className={clsx(
+          'flex h-full w-full flex-col items-start justify-center p-8 text-left md:p-10',
+          colors.paper,
+        )}
       >
         <img
           src={brand.logo}
           alt={brand.name}
-          className="mb-8 h-14 w-auto max-w-[240px] object-contain md:h-16"
+          className="mb-8 h-12 w-auto max-w-[220px] object-contain md:h-14"
         />
-        <h2 className="font-serif text-3xl font-bold text-stone-800 dark:text-white md:text-4xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: brandColors.gold }}>
           {label}
+        </p>
+        <h2 className="mt-3 max-w-md font-serif text-3xl font-bold leading-tight text-stone-800 dark:text-white md:text-4xl">
+          {bookTitle || label}
         </h2>
-        {bookTitle && (
-          <p className="mt-3 max-w-xs text-sm text-stone-500 dark:text-zinc-400">{bookTitle}</p>
-        )}
-        <div className="mx-auto mt-6 h-px w-16" style={{ background: brandColors.gold }} />
+        <div className="mt-6 h-px w-16" style={{ background: brandColors.gold }} />
         <p className="mt-6 text-sm text-stone-400">Turn the page to begin reading</p>
       </div>
     );
@@ -47,6 +50,9 @@ export function SessionPage({ page, theme, bookTitle, onEndSession }: SessionPag
       <p className="text-xs font-semibold uppercase tracking-[0.35em]" style={{ color: brandColors.gold }}>
         {label}
       </p>
+      {bookTitle && (
+        <h2 className="mt-3 max-w-sm font-serif text-2xl font-bold text-stone-800 dark:text-white">{bookTitle}</h2>
+      )}
       <p className="mt-4 max-w-xs text-sm text-stone-500 dark:text-zinc-400">
         You have completed this session. Great work!
       </p>
