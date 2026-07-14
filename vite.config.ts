@@ -5,12 +5,16 @@ import tailwindcss from '@tailwindcss/vite';
 import { bookChaptersPlugin } from './scripts/vite-plugin-book-chapters';
 
 export default defineConfig({
+  base: '/TextBook/',   // <-- Add this line
+
   plugins: [react(), tailwindcss(), bookChaptersPlugin()],
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+
   optimizeDeps: {
     include: ['pdfjs-dist'],
   },
