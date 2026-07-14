@@ -1,8 +1,8 @@
 {
-  "id": "stringstack-02-demo-2",
-  "slug": "02-demo-2",
-  "title": "Demo 2",
-  "subtitle": "Day 02 · StringStack.ai",
+  "id": "stringstack-03-demo-3",
+  "slug": "03-demo-3",
+  "title": "Demo 3",
+  "subtitle": "Day 03 · StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
@@ -12,15 +12,15 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-14T14:10:18.144Z",
+  "updatedAt": "2026-07-14T14:26:57.402Z",
   "chapters": [
     {
-      "id": "02-demo-2",
-      "title": "Demo 2",
+      "id": "03-demo-3",
+      "title": "Demo 3",
       "order": 1,
-      "pdfUrl": "/chapters/02-demo-2.pdf",
-      "uploadedAt": "2026-07-14T13:35:48.246Z",
-      "filename": "02-demo-2.pdf"
+      "pdfUrl": "/chapters/03-demo-3.pdf",
+      "uploadedAt": "2026-07-14T13:35:48.227Z",
+      "filename": "03-demo-3.pdf"
     }
   ]
 }

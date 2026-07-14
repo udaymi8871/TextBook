@@ -7,6 +7,14 @@
       "pdf": "02-demo-2.pdf",
       "sessionLabel": "Day-02 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/02-demo-2"
+    },
+    {
+      "slug": "03-demo-3",
+      "branch": "book/03-demo-3",
+      "title": "Demo 3",
+      "pdf": "03-demo-3.pdf",
+      "sessionLabel": "Day-03 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/03-demo-3"
     }
   ]
 }
