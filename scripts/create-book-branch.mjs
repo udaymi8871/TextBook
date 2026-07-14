@@ -90,13 +90,21 @@ function setupBook({ slug, title, pdfPath }) {
     publisher: 'StringStack.ai',
     coverColor: '#252525',
     accentColor: '#C6A43B',
-    autoTitleFromFirstPdf: true,
+    autoTitleFromFirstPdf: false,
     chapterSortMode: 'numbered',
     singleBookMode: true,
   };
 
   fs.writeFileSync(paths.CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
   const manifest = writeManifest();
+
+  // Keep configured book title (do not let chapter filename overwrite it).
+  manifest.title = bookTitle;
+  fs.writeFileSync(paths.MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  if (manifest.chapters[0]) {
+    manifest.chapters[0].title = bookTitle;
+    fs.writeFileSync(paths.MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  }
 
   const registry = readRegistry();
   const branch = `book/${slug}`;
