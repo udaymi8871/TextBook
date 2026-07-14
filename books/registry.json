@@ -7,6 +7,14 @@
       "pdf": "02-demo-2.pdf",
       "sessionLabel": "Day-02 Session",
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/02-demo-2"
+    },
+    {
+      "slug": "04-demo-4",
+      "branch": "book/04-demo-4",
+      "title": "Introduction to Java 1",
+      "pdf": "04-demo-4.pdf",
+      "sessionLabel": "Day-04 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/04-demo-4"
     }
   ]
 }
