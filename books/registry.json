@@ -19,6 +19,16 @@
       "docx": "05-day-05.docx"
     },
     {
+      "slug": "06-day-06",
+      "branch": "book/06-day-06",
+      "title": "Day 06 Session",
+      "source": "06-day-06.docx",
+      "sessionLabel": "Day-06 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/06-day-06",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/06-day-06/",
+      "docx": "06-day-06.docx"
+    },
+    {
       "slug": "java-fundamentals",
       "branch": "book/java-fundamentals",
       "title": "Java Fundamentals",
