@@ -11,8 +11,9 @@ import {
 import HTMLFlipBook from 'react-pageflip';
 import type { FlipBookRef } from 'react-pageflip';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import { useVirtualWindow } from '../../hooks/useVirtualPages';
+import { useVirtualWindow, VIRTUAL_WINDOW_SIZE } from '../../hooks/useVirtualPages';
 import type { FlatPage, ThemeMode } from '../../types/book';
+import { getBookPageSize } from '../../config/bookMotion';
 import { themeConfig } from '../../config/theme';
 import { BookPage, preloadNearbyPages } from './BookPage';
 
@@ -20,6 +21,8 @@ export interface FlipBookHandle {
   flipNext: () => void;
   flipPrev: () => void;
   goToPage: (index: number) => void;
+  /** Flip back to page 0 quickly, then call onComplete. */
+  flipToStartRapid: (onComplete: () => void) => void;
 }
 
 interface FlipBookReaderProps {
@@ -31,6 +34,10 @@ interface FlipBookReaderProps {
   bookTitle?: string;
   onEndSession?: () => void;
   resetKey?: number;
+  /** Skip outer perspective when nested inside BookOpenStage. */
+  embedded?: boolean;
+  /** Force exact page size (must match closed cover). */
+  pageSize?: { width: number; height: number };
 }
 
 interface FlipPageSlotProps {
@@ -72,29 +79,60 @@ const FlipPageSlot = forwardRef<HTMLDivElement, FlipPageSlotProps>(function Flip
 
 export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
   function FlipBookReader(
-    { pages, currentIndex, onPageChange, zoom, theme, bookTitle, onEndSession, resetKey = 0 },
+    {
+      pages,
+      currentIndex,
+      onPageChange,
+      zoom,
+      theme,
+      bookTitle,
+      onEndSession,
+      resetKey = 0,
+      embedded = false,
+      pageSize: pageSizeProp,
+    },
     ref,
   ) {
     const flipRef = useRef<FlipBookRef>(null);
+    const indexRef = useRef(currentIndex);
+    const rewindTimerRef = useRef<number | null>(null);
     const isMobile = useIsMobile();
     const colors = themeConfig[theme];
     const totalPages = pages.length;
-    const { windowStart, windowEnd } = useVirtualWindow(currentIndex, totalPages);
+    const virtual = useVirtualWindow(currentIndex, totalPages);
+    /** Daily QA books are small — keep all pages mounted so spreads never remount/repeat. */
+    const useFullBook = totalPages <= 64;
 
-    const [dimensions, setDimensions] = useState({ width: 400, height: 560 });
+    const [dimensions, setDimensions] = useState(() => pageSizeProp ?? getBookPageSize());
+    /** Pins page window at 0 and speeds flips for End Session rewind. */
+    const [rewinding, setRewinding] = useState(false);
+
+    indexRef.current = currentIndex;
+
+    const windowStart = useFullBook || rewinding ? 0 : virtual.windowStart;
+    const windowEnd = useFullBook
+      ? totalPages
+      : rewinding
+        ? Math.min(totalPages, Math.max(currentIndex + 2, VIRTUAL_WINDOW_SIZE))
+        : virtual.windowEnd;
 
     useEffect(() => {
+      if (pageSizeProp) {
+        setDimensions(pageSizeProp);
+        return;
+      }
+
       const update = () => {
-        const maxWidth = Math.min(window.innerWidth - 32, 520);
-        const width = Math.max(280, maxWidth);
-        const height = Math.round(width * 1.35);
-        setDimensions({ width, height });
+        const next = getBookPageSize();
+        setDimensions((prev) =>
+          prev.width === next.width && prev.height === next.height ? prev : next,
+        );
       };
 
       update();
       window.addEventListener('resize', update);
       return () => window.removeEventListener('resize', update);
-    }, [isMobile]);
+    }, [isMobile, pageSizeProp]);
 
     useEffect(() => {
       preloadNearbyPages(pages, currentIndex, zoom);
@@ -110,38 +148,61 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       return slots;
     }, [pages, windowEnd, windowStart]);
 
-    const localIndex = currentIndex - windowStart;
+    const localIndex = Math.max(0, Math.min(windowPages.length - 1, currentIndex - windowStart));
 
     const flipNext = useCallback(() => {
       if (currentIndex >= totalPages - 1) return;
 
+      const step = isMobile ? 1 : 2;
+      const target = Math.min(totalPages - 1, currentIndex + step);
+
       const api = flipRef.current?.pageFlip();
       if (api) {
-        const local = api.getCurrentPageIndex();
-        const nextLocal = currentIndex + 1 - windowStart;
-        if (local < nextLocal && nextLocal < windowPages.length) {
-          api.flipNext();
-          return;
+        const localTarget = target - windowStart;
+        if (localTarget > api.getCurrentPageIndex() && localTarget < windowPages.length) {
+          try {
+            api.flip(localTarget);
+            return;
+          } catch {
+            try {
+              api.flipNext();
+              return;
+            } catch {
+              // fall through
+            }
+          }
         }
       }
 
-      onPageChange(Math.min(totalPages - 1, currentIndex + 1));
-    }, [currentIndex, onPageChange, totalPages, windowPages.length, windowStart]);
+      onPageChange(target);
+    }, [currentIndex, isMobile, onPageChange, totalPages, windowPages.length, windowStart]);
 
     const flipPrev = useCallback(() => {
       if (currentIndex <= 0) return;
 
+      const step = isMobile ? 1 : 2;
+      const target = Math.max(0, currentIndex - step);
+
       const api = flipRef.current?.pageFlip();
       if (api) {
-        const local = api.getCurrentPageIndex();
-        if (local > 0) {
-          api.flipPrev();
-          return;
+        const localTarget = target - windowStart;
+        if (localTarget < api.getCurrentPageIndex() && localTarget >= 0) {
+          try {
+            api.flip(localTarget);
+            return;
+          } catch {
+            try {
+              api.flipPrev();
+              return;
+            } catch {
+              // fall through
+            }
+          }
         }
       }
 
-      onPageChange(Math.max(0, currentIndex - 1));
-    }, [currentIndex, onPageChange]);
+      onPageChange(target);
+    }, [currentIndex, isMobile, onPageChange, windowStart]);
 
     const goToPage = useCallback(
       (index: number) => {
@@ -149,6 +210,75 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       },
       [onPageChange, totalPages],
     );
+
+    const clearRewindTimer = useCallback(() => {
+      if (rewindTimerRef.current != null) {
+        window.clearTimeout(rewindTimerRef.current);
+        rewindTimerRef.current = null;
+      }
+    }, []);
+
+    const finishRewind = useCallback(
+      (onComplete: () => void) => {
+        clearRewindTimer();
+        if (indexRef.current > 0) onPageChange(0);
+        setRewinding(false);
+        rewindTimerRef.current = window.setTimeout(() => {
+          rewindTimerRef.current = null;
+          onComplete();
+        }, 200);
+      },
+      [clearRewindTimer, onPageChange],
+    );
+
+    const flipToStartRapid = useCallback(
+      (onComplete: () => void) => {
+        clearRewindTimer();
+
+        if (indexRef.current <= 0) {
+          onComplete();
+          return;
+        }
+
+        if (isMobile) {
+          onPageChange(0);
+          rewindTimerRef.current = window.setTimeout(() => {
+            rewindTimerRef.current = null;
+            onComplete();
+          }, 160);
+          return;
+        }
+
+        setRewinding(true);
+
+        if (indexRef.current > 8) {
+          onPageChange(6);
+        }
+
+        const deadline = Date.now() + 4000;
+
+        const step = () => {
+          if (indexRef.current <= 0 || Date.now() > deadline) {
+            finishRewind(onComplete);
+            return;
+          }
+
+          const api = flipRef.current?.pageFlip();
+          if (api && api.getCurrentPageIndex() > 0) {
+            api.flipPrev();
+          } else {
+            onPageChange(Math.max(0, indexRef.current - 1));
+          }
+
+          rewindTimerRef.current = window.setTimeout(step, 200);
+        };
+
+        rewindTimerRef.current = window.setTimeout(step, 160);
+      },
+      [clearRewindTimer, finishRewind, isMobile, onPageChange],
+    );
+
+    useEffect(() => () => clearRewindTimer(), [clearRewindTimer]);
 
     useEffect(() => {
       const api = flipRef.current?.pageFlip();
@@ -160,17 +290,43 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
       }
     }, [currentIndex, windowStart]);
 
-    useImperativeHandle(ref, () => ({ flipNext, flipPrev, goToPage }), [flipNext, flipPrev, goToPage]);
+    useImperativeHandle(
+      ref,
+      () => ({ flipNext, flipPrev, goToPage, flipToStartRapid }),
+      [flipNext, flipPrev, goToPage, flipToStartRapid],
+    );
 
     const handleFlip = useCallback(
       (e: { data: number }) => {
-        const newLocal = e.data;
-        const globalIndex = Math.max(0, Math.min(totalPages - 1, windowStart + newLocal));
+        let globalIndex = Math.max(0, Math.min(totalPages - 1, windowStart + e.data));
+
+        /**
+         * Landscape pageflip steps by one page, so the same leaf can appear once on the
+         * right and again on the left (questions look repeated). Snap to even indices so
+         * each flip shows a unique spread: [0|1], [2|3], [4|5], …
+         */
+        if (!isMobile && !rewinding && globalIndex % 2 === 1) {
+          const goingForward = globalIndex >= indexRef.current;
+          globalIndex = goingForward
+            ? Math.min(totalPages - 1, globalIndex + 1)
+            : Math.max(0, globalIndex - 1);
+
+          const api = flipRef.current?.pageFlip();
+          const local = globalIndex - windowStart;
+          if (api && api.getCurrentPageIndex() !== local) {
+            try {
+              api.turnToPage(local);
+            } catch {
+              // ignore
+            }
+          }
+        }
+
         if (globalIndex !== currentIndex) {
           onPageChange(globalIndex);
         }
       },
-      [currentIndex, onPageChange, totalPages, windowStart],
+      [currentIndex, isMobile, onPageChange, rewinding, totalPages, windowStart],
     );
 
     if (totalPages === 0) {
@@ -208,21 +364,36 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
     }
 
     return (
-      <div className="relative mx-auto" style={{ perspective: '2000px' }}>
-        <div className="absolute -inset-6 rounded-3xl bg-black/10 blur-2xl dark:bg-black/40" />
+      <div
+        className={clsx('relative', !embedded && 'mx-auto')}
+        style={
+          embedded
+            ? { width: dimensions.width * 2, height: dimensions.height }
+            : { perspective: '2000px' }
+        }
+      >
+        {!embedded && (
+          <div className="absolute -inset-6 rounded-3xl bg-black/10 blur-2xl dark:bg-black/40" />
+        )}
 
         <HTMLFlipBook
           ref={flipRef}
-          key={`${windowStart}-${zoom}-${resetKey}`}
+          key={
+            rewinding
+              ? `rewind-${zoom}-${resetKey}`
+              : useFullBook
+                ? `full-${zoom}-${resetKey}`
+                : `${windowStart}-${zoom}-${resetKey}`
+          }
           width={dimensions.width}
           height={dimensions.height}
           size="fixed"
-          minWidth={280}
-          maxWidth={520}
-          minHeight={380}
-          maxHeight={720}
+          minWidth={dimensions.width}
+          maxWidth={dimensions.width}
+          minHeight={dimensions.height}
+          maxHeight={dimensions.height}
           drawShadow
-          flippingTime={800}
+          flippingTime={rewinding ? 170 : 800}
           usePortrait={false}
           startPage={localIndex}
           autoSize={false}
@@ -230,9 +401,9 @@ export const FlipBookReader = forwardRef<FlipBookHandle, FlipBookReaderProps>(
           showCover={false}
           mobileScrollSupport
           clickEventForward={false}
-          useMouseEvents
+          useMouseEvents={!rewinding}
           swipeDistance={30}
-          showPageCorners
+          showPageCorners={!rewinding}
           className={clsx('book-flip shadow-2xl', colors.shadow)}
           onFlip={handleFlip}
         >
