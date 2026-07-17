@@ -1,8 +1,8 @@
 {
   "id": "stringstack-java-demo-2",
   "slug": "java-demo-2",
-  "title": "Java Demo 2",
-  "subtitle": "Day 01 · StringStack.ai",
+  "title": "Notes Java Demo-2",
+  "subtitle": "StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
@@ -16,7 +16,7 @@
   "chapters": [
     {
       "id": "java-demo-2",
-      "title": "Java Demo 2",
+      "title": "Notes Java Demo-2",
       "order": 1,
       "uploadedAt": "2026-07-17T06:47:23.015Z",
       "filename": "java-demo-2.content.json",
