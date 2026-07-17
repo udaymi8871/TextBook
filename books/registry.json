@@ -37,6 +37,16 @@
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-fundamentals",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-fundamentals/",
       "docx": "java-fundamentals.docx"
+    },
+    {
+      "slug": "java-introduction-1",
+      "branch": "book/java-introduction-1",
+      "title": "Java Introduction 1",
+      "source": "java-introduction-1.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-1/",
+      "docx": "java-introduction-1.docx"
     }
   ]
 }
