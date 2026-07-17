@@ -66,7 +66,7 @@ while i < len(clean):
     else:
         i += 1
 
-print(json.dumps(items, ensure_ascii=False))
+print(json.dumps(items, ensure_ascii=True))
 `;
 
 function runPython(script, docxPath) {
@@ -77,6 +77,7 @@ function runPython(script, docxPath) {
       return execFileSync(bin, ['-c', script, docxPath], {
         encoding: 'utf8',
         maxBuffer: 10 * 1024 * 1024,
+        env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
       });
     } catch (err) {
       lastError = err;

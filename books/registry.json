@@ -78,6 +78,33 @@
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-2",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-2/",
       "docx": "java-introduction-2.docx"
+    },
+    {
+      "slug": "java-introduction-3",
+      "branch": "book/java-introduction-3",
+      "title": "Notes Java Introduction-3",
+      "source": "java-introduction-3.docx",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-3",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-3/",
+      "docx": "java-introduction-3.docx"
+    },
+    {
+      "slug": "java-operators-1",
+      "branch": "book/java-operators-1",
+      "title": "Notes Java Operators-1",
+      "source": "java-operators-1.docx",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-operators-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-operators-1/",
+      "docx": "java-operators-1.docx"
+    },
+    {
+      "slug": "java-variable-1",
+      "branch": "book/java-variable-1",
+      "title": "Notes Java Variable-1",
+      "source": "java-variable-1.docx",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-variable-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-variable-1/",
+      "docx": "java-variable-1.docx"
     }
   ]
 }
