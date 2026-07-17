@@ -12,13 +12,13 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-15T19:05:27.137Z",
+  "updatedAt": "2026-07-17T07:55:46.455Z",
   "chapters": [
     {
       "id": "java-fundamentals",
       "title": "Java Fundamentals",
       "order": 1,
-      "uploadedAt": "2026-07-15T19:05:27.130Z",
+      "uploadedAt": "2026-07-17T07:55:46.452Z",
       "filename": "java-fundamentals.content.json",
       "contentUrl": "/chapters/java-fundamentals.content.json",
       "contentMode": "qa",

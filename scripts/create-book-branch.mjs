@@ -7,22 +7,55 @@ import { paths, writeManifest } from './buildManifest.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const REGISTRY_PATH = path.join(ROOT, 'books', 'registry.json');
+const SOURCES_DIR = path.join(ROOT, 'books', 'sources');
+const PAGES_BASE = 'https://udaymi8871.github.io/TextBook';
+const GITHUB_BASE = 'https://github.com/udaymi8871/TextBook';
 
-function run(command) {
-  execSync(command, { cwd: ROOT, stdio: 'inherit' });
+function run(command, options = {}) {
+  execSync(command, { cwd: ROOT, stdio: 'inherit', ...options });
+}
+
+function runCapture(command) {
+  return execSync(command, { cwd: ROOT, encoding: 'utf8' }).trim();
 }
 
 function parseArgs(argv) {
   const args = {};
+  const positionals = [];
+
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === '--slug') args.slug = argv[++i];
     else if (token === '--title') args.title = argv[++i];
     else if (token === '--pdf') args.pdf = argv[++i];
     else if (token === '--docx') args.docx = argv[++i];
-    else if (token === '--push') args.push = true;
+    else if (token === '--push' || token === 'push') args.push = true;
+    else if (token === '--deploy' || token === 'deploy') args.deploy = true;
     else if (token === '--no-commit') args.noCommit = true;
+    else if (token.startsWith('--')) {
+      console.error(`Unknown flag: ${token}`);
+      process.exit(1);
+    } else {
+      positionals.push(token);
+    }
   }
+
+  /**
+   * npm on Windows often strips `--slug` / `--docx` (treats them as npm config).
+   * Positional form always works:
+   *   npm run new-book -- 05-day-05 "books/sources/Day-05.docx" "Day 05 Session" deploy
+   */
+  if (!args.slug && positionals[0]) args.slug = positionals[0];
+  if (!args.docx && !args.pdf && positionals[1]) {
+    const source = positionals[1];
+    if (/\.pdf$/i.test(source)) args.pdf = source;
+    else args.docx = source;
+  }
+  if (!args.title && positionals[2] && !['push', 'deploy'].includes(positionals[2])) {
+    args.title = positionals[2];
+  }
+
+  if (args.deploy) args.push = true;
   return args;
 }
 
@@ -52,6 +85,8 @@ function resolveSourcePath(sourceArg, extension) {
   const candidates = [
     path.resolve(ROOT, sourceArg),
     path.resolve(ROOT, withExt),
+    path.join(SOURCES_DIR, sourceArg),
+    path.join(SOURCES_DIR, withExt),
     path.join(paths.CHAPTERS_DIR, sourceArg),
     path.join(paths.CHAPTERS_DIR, withExt),
   ];
@@ -63,9 +98,13 @@ function resolveSourcePath(sourceArg, extension) {
   throw new Error(`Source file not found: ${sourceArg}`);
 }
 
-function humanizeTitle(filePath) {
+function titleFromSource(filePath) {
   const base = path.basename(filePath, path.extname(filePath)).replace(/\.content$/i, '');
-  return base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return base.trim();
+}
+
+function humanizeTitle(filePath) {
+  return titleFromSource(filePath).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function dayFromSlug(slug) {
@@ -73,9 +112,17 @@ function dayFromSlug(slug) {
   return match ? match[1].padStart(2, '0') : '01';
 }
 
+function archiveSource(sourcePath, slug, mode) {
+  fs.mkdirSync(SOURCES_DIR, { recursive: true });
+  const ext = mode === 'docx' ? '.docx' : '.pdf';
+  const archivePath = path.join(SOURCES_DIR, `${slug}${ext}`);
+  fs.copyFileSync(sourcePath, archivePath);
+  return archivePath;
+}
+
 function setupBook({ slug, title, sourcePath, mode }) {
   const day = dayFromSlug(slug);
-  const bookTitle = title || humanizeTitle(sourcePath);
+  const bookTitle = title || titleFromSource(sourcePath);
   const sourceExt = mode === 'docx' ? '.docx' : '.pdf';
   const chapterFilename = `${slug}${sourceExt}`;
 
@@ -86,7 +133,7 @@ function setupBook({ slug, title, sourcePath, mode }) {
     id: `stringstack-${slug}`,
     slug,
     title: bookTitle,
-    subtitle: `Day ${day} · StringStack.ai`,
+    subtitle: 'StringStack.ai',
     author: 'StringStack Content Team',
     publisher: 'StringStack.ai',
     coverColor: '#252525',
@@ -113,9 +160,8 @@ function setupBook({ slug, title, sourcePath, mode }) {
     branch,
     title: bookTitle,
     source: chapterFilename,
-    sessionLabel: `Day-${day} Session`,
-    githubUrl: `https://github.com/udaymi8871/TextBook/tree/${branch}`,
-    pagesUrl: `https://udaymi8871.github.io/TextBook/${slug}/`,
+    githubUrl: `${GITHUB_BASE}/tree/${branch}`,
+    pagesUrl: `${PAGES_BASE}/${slug}/`,
   };
   if (mode === 'pdf') entry.pdf = chapterFilename;
   if (mode === 'docx') entry.docx = chapterFilename;
@@ -129,20 +175,62 @@ function setupBook({ slug, title, sourcePath, mode }) {
   return { manifest, branch, entry, bookTitle };
 }
 
+function syncRegistryToMain(slug, bookTitle) {
+  const registrySnapshot = fs.readFileSync(REGISTRY_PATH, 'utf8');
+  run('git checkout main');
+  fs.writeFileSync(REGISTRY_PATH, registrySnapshot, 'utf8');
+  run('git add books/registry.json');
+
+  const status = runCapture('git status --porcelain books/registry.json');
+  if (status) {
+    run(`git commit -m "Register book ${slug}: ${bookTitle}"`);
+  } else {
+    run(`git commit --allow-empty -m "Deploy books including ${slug}"`);
+  }
+}
+
+function printUrls(entry, branch) {
+  console.log('');
+  console.log('========================================');
+  console.log(' BOOK READY');
+  console.log('========================================');
+  console.log(`  Title:   ${entry.title}`);
+  console.log(`  Branch:  ${branch}`);
+  console.log(`  GitHub:  ${entry.githubUrl}`);
+  console.log(`  Live:    ${entry.pagesUrl}`);
+  console.log('========================================');
+  console.log('');
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.slug || (!args.pdf && !args.docx)) {
-    console.error(
-      'Usage: node scripts/create-book-branch.mjs --slug java-fundamentals --docx "Java Fundamentals.docx" [--title "Java Fundamentals"] [--push]',
-    );
+    console.error(`Usage (Windows / npm — preferred):
+  npm run new-book -- 05-day-05 "books/sources/Day-05.docx" "Day 05 Session" deploy
+
+Or call node directly (flags work):
+  node scripts/create-book-branch.mjs --slug 05-day-05 --docx "books/sources/Day-05.docx" --title "Day 05 Session" --deploy
+
+Args:
+  1 slug     Required (e.g. 05-day-05)
+  2 docx     Path to today's .docx (or .pdf)
+  3 title    Optional display title
+  deploy     Optional — push book branch + push main (triggers Pages)
+  push       Optional — push book branch only
+`);
+    process.exit(1);
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(args.slug)) {
+    console.error('Invalid --slug. Use lowercase letters, numbers, and hyphens only (e.g. 05-day-05).');
     process.exit(1);
   }
 
   const mode = args.docx ? 'docx' : 'pdf';
   const sourcePath = resolveSourcePath(args.docx || args.pdf, mode === 'docx' ? '.docx' : '.pdf');
-  // Keep original on disk if create-book clears chapters — copy to temp first
   const tempCopy = path.join(ROOT, `.tmp-book-source${path.extname(sourcePath)}`);
   fs.copyFileSync(sourcePath, tempCopy);
+  archiveSource(sourcePath, args.slug, mode);
 
   const title = args.title || humanizeTitle(sourcePath);
   const branch = `book/${args.slug}`;
@@ -154,7 +242,7 @@ function main() {
     run(`git checkout ${branch}`);
   }
 
-  const { manifest, entry, bookTitle } = setupBook({
+  const { entry, bookTitle } = setupBook({
     slug: args.slug,
     title,
     sourcePath: tempCopy,
@@ -170,20 +258,35 @@ function main() {
     run(`git commit -m "Add book branch ${args.slug}: ${bookTitle}"`);
   }
 
-  console.log('');
-  console.log(`Book branch ready: ${branch}`);
-  console.log(`  Title: ${manifest.title}`);
-  console.log(`  Session: ${entry.sessionLabel}`);
-  console.log(`  Source: public/chapters/${entry.source}`);
-  console.log(`  GitHub: ${entry.githubUrl}`);
-  console.log(`  Live:   ${entry.pagesUrl}`);
-  console.log('');
+  printUrls(entry, branch);
 
   if (args.push) {
     run(`git push -u origin ${branch} --force-with-lease`);
     console.log(`Pushed ${branch} to origin`);
   } else {
-    console.log(`Push with: git push -u origin ${branch} --force-with-lease`);
+    console.log(`Next: git push -u origin ${branch} --force-with-lease`);
+  }
+
+  if (args.deploy) {
+    console.log('');
+    console.log('Triggering GitHub Pages deploy via main…');
+    syncRegistryToMain(args.slug, bookTitle);
+    run('git push origin main');
+    console.log('');
+    console.log('Deploy started. Watch:');
+    console.log(`  ${GITHUB_BASE}/actions`);
+    console.log('');
+    console.log('Live URL (ready in ~2–5 min):');
+    console.log(`  ${entry.pagesUrl}`);
+  } else if (args.push) {
+    console.log('');
+    console.log('Book branch pushed, but Pages is NOT live yet.');
+    console.log('Deploy manually:');
+    console.log('  git checkout main');
+    console.log(`  git commit --allow-empty -m "Deploy books including ${args.slug}"`);
+    console.log('  git push origin main');
+    console.log('');
+    console.log('Or re-run with --deploy next time.');
   }
 }
 
