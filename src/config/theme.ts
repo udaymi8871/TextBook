@@ -55,10 +55,22 @@ export const themeConfig = {
   },
 } as const;
 
+const viteBase = import.meta.env.BASE_URL || '/';
+
+function brandAsset(path: string): string {
+  return `${viteBase}${path.replace(/^\//, '')}`;
+}
+
 export const brand = {
   name: 'StringStack.ai',
   tagline: 'Digital Learning Platform',
   subtitle: 'Secure · Structured · Smart Learning',
-  logo: '/stringstack-logo.png',
-  logoIcon: '/favicon-icon.png',
+  contactPhone: '8050749191',
+  contactAddress:
+    '5th floor, No.1, Pine Hurst, StringStack Office, 100 Feet Ring Rd, Vysya Bank Colony, BTM Layout 2nd Stage, BTM Layout, Bengaluru, Karnataka 560076',
+  /** Full wordmark for dark backgrounds (white text + gold emblem). */
+  logo: brandAsset('/stringstack-logo.png'),
+  /** Full wordmark for light paper / light themes. */
+  logoOnLight: brandAsset('/stringstack-logo-on-light.png'),
+  logoIcon: brandAsset('/favicon-icon.png'),
 };
