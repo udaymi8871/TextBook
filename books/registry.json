@@ -78,6 +78,15 @@
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-2",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-2/",
       "docx": "java-introduction-2.docx"
+    },
+    {
+      "slug": "java-variable-1",
+      "branch": "book/java-variable-1",
+      "title": "Notes Java Variable-1",
+      "source": "java-variable-1.docx",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-variable-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-variable-1/",
+      "docx": "java-variable-1.docx"
     }
   ]
 }
