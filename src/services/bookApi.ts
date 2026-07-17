@@ -1,4 +1,10 @@
-import type { BookManifest, FlatPage } from '../types/book';
+import type {
+  BookChapter,
+  BookManifest,
+  ChapterContentFile,
+  FlatPage,
+  QAItem,
+} from '../types/book';
 
 /** Prefix public asset paths with Vite base (e.g. /TextBook/ on GitHub Pages). */
 export function withBase(assetPath: string): string {
@@ -20,9 +26,18 @@ export async function fetchBookManifest(): Promise<BookManifest> {
     ...data,
     chapters: data.chapters.map((chapter) => ({
       ...chapter,
-      pdfUrl: withBase(chapter.pdfUrl),
+      pdfUrl: chapter.pdfUrl ? withBase(chapter.pdfUrl) : '',
+      contentUrl: chapter.contentUrl ? withBase(chapter.contentUrl) : undefined,
     })),
   };
+}
+
+export async function fetchChapterContent(contentUrl: string): Promise<ChapterContentFile> {
+  const response = await fetch(contentUrl, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load chapter content: ${response.statusText}`);
+  }
+  return (await response.json()) as ChapterContentFile;
 }
 
 export function getSessionLabel(manifest: BookManifest): string {
@@ -32,6 +47,33 @@ export function getSessionLabel(manifest: BookManifest): string {
   return `Day-${day} Session`;
 }
 
+function chunkQAItems(items: QAItem[], perPage: number): QAItem[][] {
+  const size = Math.max(1, perPage);
+  const chunks: QAItem[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks.length > 0 ? chunks : [[]];
+}
+
+/** Drop duplicate questions (same text after normalize) — keeps first occurrence. */
+export function dedupeQAItems(items: QAItem[]): QAItem[] {
+  const seen = new Set<string>();
+  const unique: QAItem[] = [];
+
+  for (const item of items) {
+    const key = item.question
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
 export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   const pages: FlatPage[] = [];
   let globalIndex = 0;
@@ -39,6 +81,28 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
   const sortedChapters = [...manifest.chapters].sort((a, b) => a.order - b.order);
 
   for (const chapter of sortedChapters) {
+    if (chapter.contentMode === 'qa' && chapter.qaItems && chapter.qaItems.length > 0) {
+      const perPage = chapter.itemsPerPage && chapter.itemsPerPage > 0 ? chapter.itemsPerPage : 2;
+      const chunks = chunkQAItems(dedupeQAItems(chapter.qaItems), perPage);
+
+      chunks.forEach((qaItems, index) => {
+        pages.push({
+          kind: 'content',
+          globalIndex,
+          chapterId: chapter.id,
+          chapterTitle: chapter.title,
+          chapterOrder: chapter.order,
+          pageInChapter: index + 1,
+          pdfUrl: chapter.pdfUrl ?? '',
+          contentMode: 'qa',
+          qaItems,
+          contentPageTotal: chunks.length,
+        });
+        globalIndex += 1;
+      });
+      continue;
+    }
+
     const pageCount = chapter.pageCount ?? 1;
 
     for (let pageInChapter = 1; pageInChapter <= pageCount; pageInChapter += 1) {
@@ -50,6 +114,7 @@ export function flattenChaptersToPages(manifest: BookManifest): FlatPage[] {
         chapterOrder: chapter.order,
         pageInChapter,
         pdfUrl: chapter.pdfUrl,
+        contentMode: 'pdf',
       });
       globalIndex += 1;
     }
@@ -81,9 +146,28 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
     globalIndex: index + 1,
   }));
 
+  /**
+   * Landscape spreads are [even|odd]. End Session must sit on the right page
+   * (odd index), matching local Demo 2. Odd content counts would leave End
+   * Session alone on the left with a blank right — pad one blank leaf first.
+   */
+  const pagesBeforeEnd: FlatPage[] = [startPage, ...wrappedContent];
+  if (pagesBeforeEnd.length % 2 === 0) {
+    pagesBeforeEnd.push({
+      kind: 'blank',
+      globalIndex: pagesBeforeEnd.length,
+      sessionLabel,
+      chapterId,
+      chapterTitle: '',
+      chapterOrder: 0,
+      pageInChapter: 0,
+      pdfUrl: '',
+    });
+  }
+
   const endPage: FlatPage = {
     kind: 'session-end',
-    globalIndex: wrappedContent.length + 1,
+    globalIndex: pagesBeforeEnd.length,
     sessionLabel,
     chapterId,
     chapterTitle: 'End Session',
@@ -92,7 +176,7 @@ export function wrapPagesWithSession(manifest: BookManifest, contentPages: FlatP
     pdfUrl: '',
   };
 
-  return [startPage, ...wrappedContent, endPage];
+  return [...pagesBeforeEnd, endPage];
 }
 
 export function getChapterStartPages(pages: FlatPage[]): Map<string, number> {
@@ -114,4 +198,21 @@ export function countContentPages(pages: FlatPage[]): number {
 
 export function estimateReadingTimeMinutes(totalPages: number, pagesPerMinute = 2): number {
   return Math.max(1, Math.ceil(totalPages / pagesPerMinute));
+}
+
+export async function enrichChapterWithContent(chapter: BookChapter): Promise<BookChapter> {
+  if (chapter.contentMode === 'qa' && chapter.contentUrl) {
+    const content = await fetchChapterContent(chapter.contentUrl);
+    const items = dedupeQAItems(Array.isArray(content.items) ? content.items : []);
+    const perPage = content.itemsPerPage && content.itemsPerPage > 0 ? content.itemsPerPage : 2;
+    return {
+      ...chapter,
+      qaItems: items,
+      itemsPerPage: perPage,
+      pageCount: Math.max(1, Math.ceil(items.length / perPage)),
+      contentMode: 'qa',
+    };
+  }
+
+  return { ...chapter, contentMode: chapter.contentMode ?? 'pdf' };
 }
