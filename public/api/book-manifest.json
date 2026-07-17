@@ -1,8 +1,8 @@
 {
-  "id": "stringstack-02-demo-2",
-  "slug": "02-demo-2",
-  "title": "Demo 2",
-  "subtitle": "Day 02 · StringStack.ai",
+  "id": "stringstack-java-operators-1",
+  "slug": "java-operators-1",
+  "title": "Notes Java Operators-1",
+  "subtitle": "StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
@@ -12,18 +12,18 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-16T11:09:57.662Z",
+  "updatedAt": "2026-07-17T13:41:14.922Z",
   "chapters": [
     {
-      "id": "02-demo-2",
-      "title": "Demo 2",
+      "id": "java-operators-1",
+      "title": "Notes Java Operators-1",
       "order": 1,
-      "uploadedAt": "2026-07-16T06:08:23.741Z",
-      "filename": "02-demo-2.content.json",
-      "contentUrl": "/chapters/02-demo-2.content.json",
+      "uploadedAt": "2026-07-17T13:41:14.820Z",
+      "filename": "java-operators-1.content.json",
+      "contentUrl": "/chapters/java-operators-1.content.json",
       "contentMode": "qa",
       "pageCount": 6,
-      "pdfUrl": "/chapters/02-demo-2.pdf"
+      "pdfUrl": ""
     }
   ]
 }

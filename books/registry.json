@@ -78,6 +78,15 @@
       "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-introduction-2",
       "pagesUrl": "https://udaymi8871.github.io/TextBook/java-introduction-2/",
       "docx": "java-introduction-2.docx"
+    },
+    {
+      "slug": "java-operators-1",
+      "branch": "book/java-operators-1",
+      "title": "Notes Java Operators-1",
+      "source": "java-operators-1.docx",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-operators-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-operators-1/",
+      "docx": "java-operators-1.docx"
     }
   ]
 }
