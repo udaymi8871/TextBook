@@ -12,13 +12,13 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-17T06:45:33.068Z",
+  "updatedAt": "2026-07-17T08:20:20.716Z",
   "chapters": [
     {
       "id": "java-demo-1",
       "title": "Notes Java Demo-1",
       "order": 1,
-      "uploadedAt": "2026-07-17T06:45:33.048Z",
+      "uploadedAt": "2026-07-17T08:19:54.544Z",
       "filename": "java-demo-1.content.json",
       "contentUrl": "/chapters/java-demo-1.content.json",
       "contentMode": "qa",
