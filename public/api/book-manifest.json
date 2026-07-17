@@ -1,8 +1,8 @@
 {
   "id": "stringstack-java-demo-3",
   "slug": "java-demo-3",
-  "title": "Java Demo 3",
-  "subtitle": "Day 01 · StringStack.ai",
+  "title": "Notes Java Demo-3",
+  "subtitle": "StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
@@ -12,13 +12,13 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-17T06:48:50.298Z",
+  "updatedAt": "2026-07-17T07:55:26.897Z",
   "chapters": [
     {
       "id": "java-demo-3",
       "title": "Java Demo 3",
       "order": 1,
-      "uploadedAt": "2026-07-17T06:48:50.170Z",
+      "uploadedAt": "2026-07-17T07:55:26.890Z",
       "filename": "java-demo-3.content.json",
       "contentUrl": "/chapters/java-demo-3.content.json",
       "contentMode": "qa",
