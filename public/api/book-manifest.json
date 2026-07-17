@@ -10,8 +10,20 @@
   "autoTitleFromFirstPdf": false,
   "chapterSortMode": "numbered",
   "singleBookMode": true,
-  "version": "0",
-  "chapterCount": 0,
-  "updatedAt": "2026-07-17T13:40:58.064Z",
-  "chapters": []
+  "version": "1",
+  "chapterCount": 1,
+  "updatedAt": "2026-07-17T13:42:41.698Z",
+  "chapters": [
+    {
+      "id": "java-variable-1",
+      "title": "Notes Java Variable-1",
+      "order": 1,
+      "uploadedAt": "2026-07-17T13:42:41.629Z",
+      "filename": "java-variable-1.content.json",
+      "contentUrl": "/chapters/java-variable-1.content.json",
+      "contentMode": "qa",
+      "pageCount": 15,
+      "pdfUrl": ""
+    }
+  ]
 }
