@@ -29,6 +29,16 @@
       "docx": "06-day-06.docx"
     },
     {
+      "slug": "java-demo-1",
+      "branch": "book/java-demo-1",
+      "title": "Java Demo 1",
+      "source": "java-demo-1.docx",
+      "sessionLabel": "Day-01 Session",
+      "githubUrl": "https://github.com/udaymi8871/TextBook/tree/book/java-demo-1",
+      "pagesUrl": "https://udaymi8871.github.io/TextBook/java-demo-1/",
+      "docx": "java-demo-1.docx"
+    },
+    {
       "slug": "java-fundamentals",
       "branch": "book/java-fundamentals",
       "title": "Java Fundamentals",

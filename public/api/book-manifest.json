@@ -1,8 +1,8 @@
 {
-  "id": "stringstack-02-demo-2",
-  "slug": "02-demo-2",
-  "title": "Demo 2",
-  "subtitle": "Day 02 · StringStack.ai",
+  "id": "stringstack-java-demo-1",
+  "slug": "java-demo-1",
+  "title": "Java Demo 1",
+  "subtitle": "Day 01 · StringStack.ai",
   "author": "StringStack Content Team",
   "publisher": "StringStack.ai",
   "coverColor": "#252525",
@@ -12,18 +12,18 @@
   "singleBookMode": true,
   "version": "1",
   "chapterCount": 1,
-  "updatedAt": "2026-07-16T11:09:57.662Z",
+  "updatedAt": "2026-07-17T06:45:33.068Z",
   "chapters": [
     {
-      "id": "02-demo-2",
-      "title": "Demo 2",
+      "id": "java-demo-1",
+      "title": "Java Demo 1",
       "order": 1,
-      "uploadedAt": "2026-07-16T06:08:23.741Z",
-      "filename": "02-demo-2.content.json",
-      "contentUrl": "/chapters/02-demo-2.content.json",
+      "uploadedAt": "2026-07-17T06:45:33.048Z",
+      "filename": "java-demo-1.content.json",
+      "contentUrl": "/chapters/java-demo-1.content.json",
       "contentMode": "qa",
-      "pageCount": 6,
-      "pdfUrl": "/chapters/02-demo-2.pdf"
+      "pageCount": 5,
+      "pdfUrl": ""
     }
   ]
 }
